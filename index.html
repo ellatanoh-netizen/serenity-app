@@ -525,62 +525,67 @@ const ADM_MAIL = 'contact.serenityci@gmail.com';
 const { createClient } = supabase;
 const sb = createClient(SB_URL, SB_KEY);
 
-const MOIS  = ['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
-const JOURS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-const now   = new Date();
-let currentUser=null, clientData=null, allMsgs=[], selType='Question';
-let clients=[], messages=[], documents=[], evals=[];
-let isAdmin=false;
+const MOIS=['janvier','fevrier','mars','avril','mai','juin','juillet','aout','septembre','octobre','novembre','decembre'];
+const MOIS_FR=['janvier','\u00e9f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
+const JOURS=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const now=new Date();
+let currentUser=null,clientData=null,allMsgs=[],selType='Question';
+let clients=[],messages=[],documents=[],evals=[],isAdmin=false;
 
-const dEl=document.getElementById('hero-date');
-if(dEl) dEl.textContent=JOURS[now.getDay()]+' '+now.getDate()+' '+MOIS[now.getMonth()]+' '+now.getFullYear();
+function moisLabel(i){
+  var m=['janvier','\u00e9f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
+  return m[i];
+}
 
-window.addEventListener('load',()=>setTimeout(()=>document.getElementById('splash').classList.add('gone'),2600));
+var dEl=document.getElementById('hero-date');
+if(dEl){
+  var j=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var m=['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
+  dEl.textContent=j[now.getDay()]+' '+now.getDate()+' '+m[now.getMonth()]+' '+now.getFullYear();
+}
 
-sb.auth.onAuthStateChange(async(event,session)=>{
+window.addEventListener('load',function(){setTimeout(function(){document.getElementById('splash').classList.add('gone');},2600);});
+
+sb.auth.onAuthStateChange(async function(event,session){
   if(session && session.user){
     currentUser=session.user;
-    if(isAdmin){ showAdminApp(); await loadAdminAll(); }
-    else { await loadClientData(); showClientApp(); }
-  } else {
-    currentUser=null; showLoginPage();
-  }
+    if(isAdmin){showAdminApp();await loadAdminAll();}
+    else{await loadClientData();showClientApp();}
+  }else{currentUser=null;showLoginPage();}
 });
 
 async function doClientLogin(){
-  const email=document.getElementById('l-email').value.trim();
-  const pwd=document.getElementById('l-pwd').value;
-  const btn=document.getElementById('l-btn');
-  const err=document.getElementById('l-err');
+  var email=document.getElementById('l-email').value.trim();
+  var pwd=document.getElementById('l-pwd').value;
+  var btn=document.getElementById('l-btn');
+  var err=document.getElementById('l-err');
   err.style.display='none';
   if(!email||!pwd){showErr(err,'Remplissez tous les champs.');return;}
   isAdmin=false;
-  btn.disabled=true; btn.innerHTML='<div class="spin"></div>';
-  const {error}=await sb.auth.signInWithPassword({email:email,password:pwd});
-  if(error){showErr(err,'Email ou mot de passe incorrect.');btn.disabled=false;btn.innerHTML='Se connecter';}
+  btn.disabled=true;btn.innerHTML='<div class="spin"></div>';
+  var r=await sb.auth.signInWithPassword({email:email,password:pwd});
+  if(r.error){showErr(err,'Email ou mot de passe incorrect.');btn.disabled=false;btn.innerHTML='Se connecter';}
 }
 
 async function doAdminLogin(){
-  const email=document.getElementById('a-email').value.trim();
-  const pwd=document.getElementById('a-pwd').value;
-  const btn=document.getElementById('a-btn');
-  const err=document.getElementById('a-err');
+  var email=document.getElementById('a-email').value.trim();
+  var pwd=document.getElementById('a-pwd').value;
+  var btn=document.getElementById('a-btn');
+  var err=document.getElementById('a-err');
   err.style.display='none';
-  if(email.toLowerCase()!==ADM_MAIL.toLowerCase()){
-    showErr(err,'Acc\u00e8s refus\u00e9 \u2014 email non autoris\u00e9.');return;
-  }
+  if(email.toLowerCase()!==ADM_MAIL.toLowerCase()){showErr(err,'Acc\u00e8s refus\u00e9 \u2014 email non autoris\u00e9.');return;}
   if(!pwd){showErr(err,'Entrez le mot de passe.');return;}
   isAdmin=true;
-  btn.disabled=true; btn.innerHTML='<div class="spin"></div>';
-  const {error}=await sb.auth.signInWithPassword({email:email,password:pwd});
-  if(error){showErr(err,'Mot de passe incorrect.');btn.disabled=false;btn.innerHTML='Acc\u00e9der au tableau de bord';isAdmin=false;}
+  btn.disabled=true;btn.innerHTML='<div class="spin"></div>';
+  var r=await sb.auth.signInWithPassword({email:email,password:pwd});
+  if(r.error){showErr(err,'Mot de passe incorrect.');btn.disabled=false;btn.innerHTML='Acc\u00e9der au tableau de bord';isAdmin=false;}
   else{closeAdminModal();}
 }
 
 async function doLogout(){await sb.auth.signOut();isAdmin=false;}
 
 async function doForgot(){
-  const email=document.getElementById('l-email').value.trim();
+  var email=document.getElementById('l-email').value.trim();
   if(!email){showErr(document.getElementById('l-err'),'Entrez votre email.');return;}
   await sb.auth.resetPasswordForEmail(email);
   showToast('Email de r\u00e9initialisation envoy\u00e9 \u2713');
@@ -591,7 +596,7 @@ function showLoginPage(){
   document.getElementById('client-app').classList.remove('show');
   document.getElementById('admin-app').classList.remove('show');
   document.getElementById('fab').style.display='none';
-  const b=document.getElementById('l-btn');b.disabled=false;b.innerHTML='Se connecter';
+  var b=document.getElementById('l-btn');b.disabled=false;b.innerHTML='Se connecter';
 }
 function showClientApp(){
   document.getElementById('login-page').classList.remove('show');
@@ -612,106 +617,104 @@ function closeAdminModal(){document.getElementById('mo-admin').classList.remove(
 function closeAdminModalOut(e){if(e.target===document.getElementById('mo-admin'))closeAdminModal();}
 
 async function loadClientData(){
-  const {data}=await sb.from('clients').select('*').eq('id',currentUser.id).single();
-  if(data){clientData=data;renderHome();}
+  var r=await sb.from('clients').select('*').eq('id',currentUser.id).single();
+  if(r.data){clientData=r.data;renderHome();}
   await loadCliMsgs();
   await loadCliDocs();
 }
 
 function renderHome(){
   if(!clientData)return;
+  var m=['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
   document.getElementById('hero-name').innerHTML='Madame <strong>'+clientData.nom+'</strong>';
-  document.getElementById('emp-name').textContent=clientData.employe_nom||'--';
-  document.getElementById('emp-role').textContent=clientData.employe_role||'--';
-  document.getElementById('emp-score').textContent=clientData.employe_note ? '\u2605 '+clientData.employe_note : '\u2605 --';
-  document.getElementById('cc-f').textContent=(clientData.formule||'--')+' \u2014 '+fCFA(clientData.montant)+' / mois';
-  document.getElementById('d-f').textContent=clientData.formule||'--';
+  document.getElementById('emp-name').textContent=clientData.employe_nom||'\u2014';
+  document.getElementById('emp-role').textContent=clientData.employe_role||'\u2014';
+  document.getElementById('emp-score').textContent=clientData.employe_note ? '\u2605 '+clientData.employe_note : '\u2605 \u2014';
+  document.getElementById('cc-f').textContent=(clientData.formule||'\u2014')+' \u2014 '+fCFA(clientData.montant)+' / mois';
+  document.getElementById('d-f').textContent=clientData.formule||'\u2014';
   document.getElementById('d-m').textContent=fCFA(clientData.montant);
   if(clientData.date_debut){
-    var dd=new Date(clientData.date_debut);
-    var ds=dd.getDate()+' '+MOIS[dd.getMonth()]+' '+dd.getFullYear();
+    var d=new Date(clientData.date_debut);
+    var ds=d.getDate()+' '+m[d.getMonth()]+' '+d.getFullYear();
     document.getElementById('cc-m').textContent='Depuis le '+ds+' \u00b7 3 mois min.';
     document.getElementById('d-d').textContent=ds;
   }
   if(clientData.prochain_paiement){
-    var pp=new Date(clientData.prochain_paiement);
-    var ps=pp.getDate()+' '+MOIS[pp.getMonth()]+' '+pp.getFullYear();
+    var p=new Date(clientData.prochain_paiement);
+    var ps=p.getDate()+' '+m[p.getMonth()]+' '+p.getFullYear();
     document.getElementById('cc-mo').textContent='Prochain paiement : '+ps;
     document.getElementById('d-p').textContent=ps;
   }
-  var mn=MOIS[now.getMonth()];
+  var mn=m[now.getMonth()];
   document.getElementById('sat-mo').textContent=mn.charAt(0).toUpperCase()+mn.slice(1)+' '+now.getFullYear();
-  document.getElementById('sat-em').textContent=(clientData.employe_nom||'--')+' \u00b7 '+(clientData.employe_role||'--');
+  document.getElementById('sat-em').textContent=(clientData.employe_nom||'\u2014')+' \u00b7 '+(clientData.employe_role||'\u2014');
   document.getElementById('sat-sub').textContent=mn+' \u00b7 '+(clientData.employe_nom||'votre employ\u00e9e');
-  var pr=clientData.prenom||'';
-  var nm=clientData.nom||'';
-  var ini=pr.length ? pr[0].toUpperCase() : (nm.length ? nm[0].toUpperCase() : '?');
+  var ini=((clientData.prenom||'')[0]||(clientData.nom||'')[0]||'?').toUpperCase();
   document.getElementById('cli-av').textContent=ini;
   setTimeout(function(){document.getElementById('cc-fill').style.width='33%';},700);
 }
 
 async function loadCliMsgs(){
-  const {data}=await sb.from('messages').select('*').eq('client_id',currentUser.id).order('created_at',{ascending:false});
-  allMsgs=data||[];
+  var r=await sb.from('messages').select('*').eq('client_id',currentUser.id).order('created_at',{ascending:false});
+  allMsgs=r.data||[];
   renderCliMsgs(allMsgs);
 }
 
 function renderCliMsgs(msgs){
   var list=document.getElementById('msg-list');
-  if(!msgs.length){
-    list.innerHTML='<div class="est"><div class="eic">\ud83d\udcac</div><div class="eti">Aucune demande</div><div class="ets">Utilisez \u2726 pour \u00e9crire \u00e0 Serenity</div></div>';
-    return;
+  var m=['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
+  if(!msgs.length){list.innerHTML='<div class="est"><div class="eic">\ud83d\udcac</div><div class="eti">Aucune demande</div><div class="ets">Utilisez \u2736 pour \u00e9crire \u00e0 Serenity</div></div>';return;}
+  var html='';
+  for(var i=0;i<msgs.length;i++){
+    var msg=msgs[i];
+    var d=new Date(msg.created_at);
+    var ds=d.getDate()+' '+m[d.getMonth()];
+    var bc=msg.statut==='resolu' ? 'bg' : 'ba';
+    var bl=msg.statut==='resolu' ? 'R\u00e9solu \u2713' : 'En cours';
+    html+='<div class="mc"><div class="mt"><span class="mcat">'+(msg.categorie||'Message')+'</span><span class="mdate">'+ds+'</span></div><div class="mti">'+(msg.titre||'')+'</div><div class="mpv">'+(msg.contenu||'')+'</div><span class="bdg '+bc+'">'+bl+'</span></div>';
   }
-  list.innerHTML=msgs.map(function(m){
-    var d=new Date(m.created_at);
-    var ds=d.getDate()+' '+MOIS[d.getMonth()];
-    var bc=m.statut==='resolu' ? 'bg' : 'ba';
-    var bl=m.statut==='resolu' ? 'R\u00e9solu \u2713' : 'En cours';
-    return '<div class="mc"><div class="mt"><span class="mcat">'+(m.categorie||'Message')+'</span><span class="mdate">'+ds+'</span></div><div class="mti">'+(m.titre||'')+'</div><div class="mpv">'+(m.contenu||'')+'</div><span class="bdg '+bc+'">'+bl+'</span></div>';
-  }).join('');
+  list.innerHTML=html;
 }
 
 function fMsgs(type,chip){
   document.querySelectorAll('.fr .chip').forEach(function(c){c.classList.remove('active');});
   chip.classList.add('active');
-  renderCliMsgs(type==='all' ? allMsgs : allMsgs.filter(function(m){return m.statut===type;}));
+  if(type==='all'){renderCliMsgs(allMsgs);}
+  else{renderCliMsgs(allMsgs.filter(function(m){return m.statut===type;}));}
 }
 
 async function loadCliDocs(){
-  const {data}=await sb.from('documents').select('*').eq('client_id',currentUser.id).order('created_at',{ascending:false});
+  var r=await sb.from('documents').select('*').eq('client_id',currentUser.id).order('created_at',{ascending:false});
   var list=document.getElementById('doc-list');
-  if(!data || !data.length){
-    list.innerHTML='<div class="est"><div class="eic">\ud83d\udcc4</div><div class="eti">Aucun document</div><div class="ets">Serenity ajoutera vos documents ici</div></div>';
-    return;
+  if(!r.data||!r.data.length){list.innerHTML='<div class="est"><div class="eic">\ud83d\udcc4</div><div class="eti">Aucun document</div><div class="ets">Serenity ajoutera vos documents ici</div></div>';return;}
+  var ic={contrat:'\ud83d\udccb',facture:'\ud83d\udcb0',attestation:'\ud83c\udfd7\ufe0f',rapport:'\ud83d\udcca'};
+  var html='';
+  for(var i=0;i<r.data.length;i++){
+    var doc=r.data[i];
+    var icon=ic[doc.type]||'\ud83d\udcc4';
+    var meta=doc.date_doc ? new Date(doc.date_doc).toLocaleDateString('fr-FR') : '';
+    if(doc.montant) meta+=' \u00b7 '+fCFA(doc.montant);
+    meta+=' \u00b7 PDF';
+    html+='<div class="di" onclick="window.open(\''+(doc.url||'#')+'\',\'_blank\')"><div class="dic">'+icon+'</div><div class="din"><div class="dina">'+doc.nom+'</div><div class="dinm">'+meta+'</div></div><div class="dil">\u2193</div></div>';
   }
-  var ic={contrat:'\ud83d\udccb',facture:'\ud83d\udcb0',attestation:'\ud83c\udfe6',rapport:'\ud83d\udcca'};
-  list.innerHTML=data.map(function(d){
-    var ico=ic[d.type]||'\ud83d\udcc4';
-    var dt=d.date_doc ? new Date(d.date_doc).toLocaleDateString('fr-FR') : '';
-    var mo=d.montant ? ' \u00b7 '+fCFA(d.montant) : '';
-    var url=d.url||'#';
-    return '<div class="di" onclick="window.open(\''+url+'\',\'_blank\')"><div class="dic">'+ico+'</div><div class="din"><div class="dina">'+d.nom+'</div><div class="dinm">'+dt+mo+' \u00b7 PDF</div></div><div class="dil">\u2193</div></div>';
-  }).join('');
+  list.innerHTML=html;
 }
 
-function getSt(id){
-  var v=0;
-  document.querySelectorAll('#s'+id+' .star.on').forEach(function(){v++;});
-  return v||3;
-}
+function getSt(id){var v=0;document.querySelectorAll('#s'+id+' .star.on').forEach(function(){v++;});return v||3;}
 
 async function submitEval(){
   var btn=document.getElementById('sat-btn');
   btn.disabled=true;btn.innerHTML='<div class="spin"></div>';
-  var mn=MOIS[now.getMonth()]+' '+now.getFullYear();
-  const {error}=await sb.from('evaluations').insert({
-    client_id:currentUser.id,mois:mn,
+  var m=['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
+  var moisStr=m[now.getMonth()]+' '+now.getFullYear();
+  var r=await sb.from('evaluations').insert({
+    client_id:currentUser.id,mois:moisStr,
     note_proprete:getSt(1),note_ponctualite:getSt(2),
     note_consignes:getSt(3),note_attitude:getSt(4),
     remarque:document.getElementById('sat-note').value
   });
-  btn.disabled=false;btn.innerHTML='Envoyer mon \u00e9valuation \u2726';
-  if(!error){showToast('\u00c9valuation envoy\u00e9e \u2014 Merci ! \u2605');setTimeout(function(){swV('home');},1200);}
+  btn.disabled=false;btn.innerHTML='Envoyer mon \u00e9valuation \u2736';
+  if(!r.error){showToast('\u00c9valuation envoy\u00e9e \u2014 Merci ! \u2605');setTimeout(function(){swV('home');},1200);}
   else showToast('Erreur \u2014 r\u00e9essayez');
 }
 
@@ -720,29 +723,29 @@ async function sendRequest(){
   var btn=document.getElementById('cli-send');
   if(!msg){showToast('\u00c9crivez votre message');return;}
   btn.disabled=true;btn.innerHTML='<div class="spin"></div>';
-  const {error}=await sb.from('messages').insert({
+  var titre=selType+' \u2014 '+now.toLocaleDateString('fr-FR');
+  var r=await sb.from('messages').insert({
     client_id:currentUser.id,categorie:selType,
-    titre:selType+' \u2014 '+now.toLocaleDateString('fr-FR'),
-    contenu:msg,statut:'en_cours'
+    titre:titre,contenu:msg,statut:'en_cours'
   });
   btn.disabled=false;btn.innerHTML='Envoyer \u00e0 Serenity';
   closeMoc();
-  if(!error){showToast('Demande envoy\u00e9e \u2713');document.getElementById('cli-msg').value='';await loadCliMsgs();}
+  if(!r.error){showToast('Demande envoy\u00e9e \u2713');document.getElementById('cli-msg').value='';await loadCliMsgs();}
   else showToast('Erreur \u2014 r\u00e9essayez');
 }
 
 function swV(id){
   document.querySelectorAll('#client-app .view').forEach(function(v){v.classList.remove('active');});
   document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
-  var vv=document.getElementById('view-'+id);if(vv)vv.classList.add('active');
-  var nv=document.getElementById('nav-'+id);if(nv)nv.classList.add('active');
+  var v=document.getElementById('view-'+id);if(v)v.classList.add('active');
+  var n=document.getElementById('nav-'+id);if(n)n.classList.add('active');
   var ac=document.querySelector('.app-content');if(ac)ac.scrollTo({top:0,behavior:'smooth'});
   document.getElementById('fab').style.display=(id==='msg')?'flex':'none';
 }
 
 function cN(id){
   var c=clients.find(function(x){return x.id===id;});
-  return c ? (c.prenom||'')+' '+(c.nom||'') : '--';
+  return c ? (c.prenom||'')+' '+(c.nom||'') : '\u2014';
 }
 
 async function loadAdminAll(){
@@ -758,38 +761,47 @@ async function loadAdminAll(){
 }
 
 function renderDash(){
+  var m=['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
   document.getElementById('st-c').textContent=clients.length;
-  document.getElementById('st-m').textContent=messages.filter(function(m){return m.statut==='en_cours';}).length;
+  document.getElementById('st-m').textContent=messages.filter(function(x){return x.statut==='en_cours';}).length;
   var ns=evals.filter(function(e){return e.note_proprete;});
-  var avg='--';
+  var avg='\u2014';
   if(ns.length){
-    var sum=ns.reduce(function(a,e){return a+(e.note_proprete+e.note_ponctualite+e.note_consignes+e.note_attitude)/4;},0);
-    avg=(sum/ns.length).toFixed(1);
+    var sum=0;
+    for(var i=0;i<ns.length;i++){sum+=(ns[i].note_proprete+ns[i].note_ponctualite+ns[i].note_consignes+ns[i].note_attitude)/4;}
+    avg='\u2605 '+(sum/ns.length).toFixed(1);
   }
-  document.getElementById('st-n').textContent=avg!='--' ? '\u2605 '+avg : '--';
+  document.getElementById('st-n').textContent=avg;
   document.getElementById('st-d').textContent=documents.length;
   var el=document.getElementById('dash-msgs');
   var rec=messages.slice(0,3);
-  el.innerHTML=rec.length ? rec.map(function(m){return aMsgCard(m,true);}).join('') : '<div class="est"><div class="eic">\ud83d\udcac</div><div class="eti">Aucune demande</div></div>';
+  if(!rec.length){el.innerHTML='<div class="est"><div class="eic">\ud83d\udcac</div><div class="eti">Aucune demande</div></div>';return;}
+  var html='';
+  for(var i=0;i<rec.length;i++){html+=aMsgCard(rec[i],true);}
+  el.innerHTML=html;
 }
 
-function aMsgCard(m,short){
-  var d=new Date(m.created_at);
-  var ds=d.getDate()+' '+MOIS[d.getMonth()];
-  var bc=m.statut==='resolu' ? 'bg2' : 'ba2';
-  var bl=m.statut==='resolu' ? 'R\u00e9solu \u2713' : 'En cours';
+function aMsgCard(msg,short){
+  var m=['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
+  var d=new Date(msg.created_at);
+  var ds=d.getDate()+' '+m[d.getMonth()];
+  var bc=msg.statut==='resolu' ? 'bg2' : 'ba2';
+  var bl=msg.statut==='resolu' ? 'R\u00e9solu \u2713' : 'En cours';
   var acts='';
   if(!short){
-    if(m.statut!=='resolu') acts+='<button class="btn bpg bsm" onclick="resolveMsg(\''+m.id+'\')>\u2713 R\u00e9solu</button>';
-    acts+='<button class="btn bpr bsm" onclick="deleteMsg(\''+m.id+'\')">\ud83d\uddd1\ufe0f</button>';
+    if(msg.statut!=='resolu'){acts+='<button class="btn bpg bsm" onclick="resolveMsg(\''+msg.id+'\')">R\u00e9solu</button>';}
+    acts+='<button class="btn bpr bsm" onclick="deleteMsg(\''+msg.id+'\')">\ud83d\uddd1\ufe0f</button>';
     acts='<div class="amac">'+acts+'</div>';
   }
-  return '<div class="am"><div class="amh"><span class="amc2">\ud83d\udc64 '+cN(m.client_id)+'</span><div style="display:flex;gap:6px;align-items:center"><span class="b '+bc+'">'+bl+'</span><span class="amda">'+ds+'</span></div></div><div class="amca">'+(m.categorie||'Message')+'</div><div class="amti">'+(m.titre||'')+'</div><div class="ambo">'+(m.contenu||'')+'</div>'+acts+'</div>';
+  return '<div class="am"><div class="amh"><span class="amc2">\ud83d\udc64 '+cN(msg.client_id)+'</span><div style="display:flex;gap:6px;align-items:center"><span class="b '+bc+'">'+bl+'</span><span class="amda">'+ds+'</span></div></div><div class="amca">'+(msg.categorie||'Message')+'</div><div class="amti">'+(msg.titre||'')+'</div><div class="ambo">'+(msg.contenu||'')+'</div>'+acts+'</div>';
 }
 
 function renderAdmMsgs(){
   var el=document.getElementById('adm-msgs');
-  el.innerHTML=messages.length ? messages.map(function(m){return aMsgCard(m,false);}).join('') : '<div class="est"><div class="eic">\ud83d\udcac</div><div class="eti">Aucune demande</div></div>';
+  if(!messages.length){el.innerHTML='<div class="est"><div class="eic">\ud83d\udcac</div><div class="eti">Aucune demande</div></div>';return;}
+  var html='';
+  for(var i=0;i<messages.length;i++){html+=aMsgCard(messages[i],false);}
+  el.innerHTML=html;
 }
 
 async function resolveMsg(id){
@@ -798,7 +810,6 @@ async function resolveMsg(id){
   messages=r.data||[];renderAdmMsgs();renderDash();
   showToast('R\u00e9solu \u2713');
 }
-
 async function deleteMsg(id){
   if(!confirm('Supprimer ?'))return;
   await sb.from('messages').delete().eq('id',id);
@@ -810,37 +821,54 @@ async function deleteMsg(id){
 function renderTbC(){
   var tb=document.getElementById('tb-c');
   if(!clients.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--mist)">Aucun client</td></tr>';return;}
-  tb.innerHTML=clients.map(function(c){
-    var nm=(c.prenom||'')+' '+(c.nom||'');
-    var fm=c.formule||'--';
-    var en=c.employe_nom||'--';
-    var mo=c.montant ? c.montant.toLocaleString('fr-FR')+' FCFA' : '--';
-    var pp=c.prochain_paiement ? new Date(c.prochain_paiement).toLocaleDateString('fr-FR') : '--';
-    return '<tr><td><strong>'+nm+'</strong></td><td><span class="b bn">'+fm+'</span></td><td>'+en+'</td><td>'+mo+'</td><td>'+pp+'</td><td><div class="tda"><button class="btn bpo bsm" onclick="editClient(\''+c.id+'\')">\u270f\ufe0f</button><button class="btn bpr bsm" onclick="deleteClient(\''+c.id+'\')">\ud83d\uddd1\ufe0f</button></div></td></tr>';
-  }).join('');
+  var html='';
+  for(var i=0;i<clients.length;i++){
+    var c=clients[i];
+    var pmt=c.prochain_paiement ? new Date(c.prochain_paiement).toLocaleDateString('fr-FR') : '\u2014';
+    var mnt=c.montant ? c.montant.toLocaleString('fr-FR')+' FCFA' : '\u2014';
+    html+='<tr><td><strong>'+(c.prenom||'')+' '+(c.nom||'')+'</strong></td>';
+    html+='<td><span class="b bn">'+(c.formule||'\u2014')+'</span></td>';
+    html+='<td>'+(c.employe_nom||'\u2014')+'</td>';
+    html+='<td>'+mnt+'</td><td>'+pmt+'</td>';
+    html+='<td><div class="tda"><button class="btn bpo bsm" onclick="editClient(\''+c.id+'\')">&#9998;</button><button class="btn bpr bsm" onclick="deleteClient(\''+c.id+'\')">\ud83d\uddd1\ufe0f</button></div></td></tr>';
+  }
+  tb.innerHTML=html;
 }
 
 function renderTbD(){
-  var ic={contrat:'\ud83d\udccb',facture:'\ud83d\udcb0',attestation:'\ud83c\udfe6',rapport:'\ud83d\udcca'};
+  var ic={contrat:'\ud83d\udccb',facture:'\ud83d\udcb0',attestation:'\ud83c\udfd7\ufe0f',rapport:'\ud83d\udcca'};
   var tb=document.getElementById('tb-d');
   if(!documents.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--mist)">Aucun document</td></tr>';return;}
-  tb.innerHTML=documents.map(function(d){
-    var ico=ic[d.type]||'\ud83d\udcc4';
-    var cn=cN(d.client_id);
-    var mo=d.montant ? d.montant.toLocaleString('fr-FR')+' FCFA' : '--';
-    var dt=d.date_doc ? new Date(d.date_doc).toLocaleDateString('fr-FR') : '--';
-    var lnk=d.url ? '<a href="'+d.url+'" target="_blank" class="btn bpo bsm">\u2197</a>' : '';
-    return '<tr><td>'+cn+'</td><td>'+ico+' '+(d.nom||'--')+'</td><td><span class="b bn">'+(d.type||'--')+'</span></td><td>'+mo+'</td><td>'+dt+'</td><td><div class="tda">'+lnk+'<button class="btn bpr bsm" onclick="deleteDoc(\''+d.id+'\')">\ud83d\uddd1\ufe0f</button></div></td></tr>';
-  }).join('');
+  var html='';
+  for(var i=0;i<documents.length;i++){
+    var doc=documents[i];
+    var icon=ic[doc.type]||'\ud83d\udcc4';
+    var mnt=doc.montant ? doc.montant.toLocaleString('fr-FR')+' FCFA' : '\u2014';
+    var dt=doc.date_doc ? new Date(doc.date_doc).toLocaleDateString('fr-FR') : '\u2014';
+    var lnk=doc.url ? '<a href="'+doc.url+'" target="_blank" class="btn bpo bsm">\u2197</a>' : '';
+    html+='<tr><td>'+cN(doc.client_id)+'</td><td>'+icon+' '+(doc.nom||'\u2014')+'</td>';
+    html+='<td><span class="b bn">'+(doc.type||'\u2014')+'</span></td>';
+    html+='<td>'+mnt+'</td><td>'+dt+'</td>';
+    html+='<td><div class="tda">'+lnk+'<button class="btn bpr bsm" onclick="deleteDoc(\''+doc.id+'\')">\ud83d\uddd1\ufe0f</button></div></td></tr>';
+  }
+  tb.innerHTML=html;
 }
 
 function renderTbE(){
   var tb=document.getElementById('tb-e');
   if(!evals.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--mist)">Aucune \u00e9valuation</td></tr>';return;}
-  tb.innerHTML=evals.map(function(e){
-    function st(n){return n ? '\u2605'.repeat(n)+'\u2606'.repeat(5-n) : '--';}
-    return '<tr><td>'+cN(e.client_id)+'</td><td>'+(e.mois||'--')+'</td><td style="color:var(--gold)">'+st(e.note_proprete)+'</td><td style="color:var(--gold)">'+st(e.note_ponctualite)+'</td><td style="color:var(--gold)">'+st(e.note_consignes)+'</td><td style="color:var(--gold)">'+st(e.note_attitude)+'</td><td style="max-width:160px;font-size:11px;color:var(--mist)">'+(e.remarque||'--')+'</td></tr>';
-  }).join('');
+  var html='';
+  function st(n){if(!n)return'\u2014';var s='';for(var i=0;i<n;i++)s+='\u2605';for(var i=n;i<5;i++)s+='\u2606';return s;}
+  for(var i=0;i<evals.length;i++){
+    var e=evals[i];
+    html+='<tr><td>'+cN(e.client_id)+'</td><td>'+(e.mois||'\u2014')+'</td>';
+    html+='<td style="color:var(--gold)">'+st(e.note_proprete)+'</td>';
+    html+='<td style="color:var(--gold)">'+st(e.note_ponctualite)+'</td>';
+    html+='<td style="color:var(--gold)">'+st(e.note_consignes)+'</td>';
+    html+='<td style="color:var(--gold)">'+st(e.note_attitude)+'</td>';
+    html+='<td style="max-width:160px;font-size:11px;color:var(--mist)">'+(e.remarque||'\u2014')+'</td></tr>';
+  }
+  tb.innerHTML=html;
 }
 
 async function saveClient(){
@@ -848,8 +876,9 @@ async function saveClient(){
   var id=document.getElementById('c-id').value.trim();
   if(!id){showToast('ID obligatoire');return;}
   btn.disabled=true;btn.innerHTML='<div class="spin"></div>';
-  const {error}=await sb.from('clients').insert({
-    id:id,nom:document.getElementById('c-nom').value,
+  var r=await sb.from('clients').insert({
+    id:id,
+    nom:document.getElementById('c-nom').value,
     prenom:document.getElementById('c-prenom').value,
     telephone:document.getElementById('c-tel').value,
     formule:document.getElementById('c-formule').value,
@@ -861,8 +890,8 @@ async function saveClient(){
     prochain_paiement:document.getElementById('c-pmt').value||null
   });
   btn.disabled=false;btn.innerHTML='Enregistrer le client';
-  if(!error){closeMoa('moa-ac');await loadAdminAll();showToast('Client ajout\u00e9 \u2713');}
-  else showToast('Erreur : '+error.message);
+  if(!r.error){closeMoa('moa-ac');await loadAdminAll();showToast('Client ajout\u00e9 \u2713');}
+  else showToast('Erreur : '+r.error.message);
 }
 
 function editClient(id){
@@ -882,7 +911,7 @@ function editClient(id){
 
 async function updateClient(){
   var id=document.getElementById('ec-id').value;
-  const {error}=await sb.from('clients').update({
+  var r=await sb.from('clients').update({
     nom:document.getElementById('ec-nom').value,
     prenom:document.getElementById('ec-prenom').value,
     formule:document.getElementById('ec-formule').value,
@@ -892,8 +921,8 @@ async function updateClient(){
     employe_note:parseFloat(document.getElementById('ec-enote').value),
     prochain_paiement:document.getElementById('ec-pmt').value||null
   }).eq('id',id);
-  if(!error){closeMoa('moa-ec');await loadAdminAll();showToast('Mis \u00e0 jour \u2713');}
-  else showToast('Erreur : '+error.message);
+  if(!r.error){closeMoa('moa-ec');await loadAdminAll();showToast('Mis \u00e0 jour \u2713');}
+  else showToast('Erreur : '+r.error.message);
 }
 
 async function deleteClient(id){
@@ -905,12 +934,12 @@ async function deleteClient(id){
 function popDSel(){
   var s=document.getElementById('d-cid');
   s.innerHTML='<option value="">S\u00e9lectionner...</option>';
-  clients.forEach(function(c){
+  for(var i=0;i<clients.length;i++){
     var o=document.createElement('option');
-    o.value=c.id;
-    o.textContent=(c.prenom||'')+' '+(c.nom||'');
+    o.value=clients[i].id;
+    o.textContent=(clients[i].prenom||'')+' '+(clients[i].nom||'');
     s.appendChild(o);
-  });
+  }
 }
 
 async function saveDoc(){
@@ -918,7 +947,7 @@ async function saveDoc(){
   var cid=document.getElementById('d-cid').value;
   if(!cid){showToast('S\u00e9lectionnez un client');return;}
   btn.disabled=true;btn.innerHTML='<div class="spin"></div>';
-  const {error}=await sb.from('documents').insert({
+  var r=await sb.from('documents').insert({
     client_id:cid,
     nom:document.getElementById('d-nom').value,
     type:document.getElementById('d-type').value,
@@ -927,8 +956,8 @@ async function saveDoc(){
     montant:parseInt(document.getElementById('d-montant').value)||null
   });
   btn.disabled=false;btn.innerHTML='Enregistrer le document';
-  if(!error){closeMoa('moa-ad');await loadAdminAll();showToast('Document ajout\u00e9 \u2713');}
-  else showToast('Erreur : '+error.message);
+  if(!r.error){closeMoa('moa-ad');await loadAdminAll();showToast('Document ajout\u00e9 \u2713');}
+  else showToast('Erreur : '+r.error.message);
 }
 
 async function deleteDoc(id){
@@ -941,8 +970,8 @@ var admT={dashboard:'Tableau de bord',clients:'Clients',messages:'Demandes clien
 function swA(id){
   document.querySelectorAll('.av').forEach(function(v){v.classList.remove('active');});
   document.querySelectorAll('.sn').forEach(function(b){b.classList.remove('active');});
-  var vv=document.getElementById('av-'+id);if(vv)vv.classList.add('active');
-  var nv=document.getElementById('sn-'+id);if(nv)nv.classList.add('active');
+  var v=document.getElementById('av-'+id);if(v)v.classList.add('active');
+  var n=document.getElementById('sn-'+id);if(n)n.classList.add('active');
   document.getElementById('adm-title').textContent=admT[id]||id;
 }
 
@@ -967,12 +996,14 @@ document.querySelectorAll('.stars').forEach(function(g){
   });
 });
 
-function fCFA(n){return n ? n.toLocaleString('fr-FR')+' FCFA' : '--';}
+function fCFA(n){return n ? n.toLocaleString('fr-FR')+' FCFA' : '\u2014';}
 function showErr(el,msg){el.textContent=msg;el.style.display='block';}
-var tt;
+var toastTimer;
 function showToast(msg){
-  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show');},2800);
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2800);
 }
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'){
