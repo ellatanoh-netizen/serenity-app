@@ -590,7 +590,23 @@ window.addEventListener('load', function () {
 function fetchSheet(callback) {
   fetch(SCRIPT_URL, {
     method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: 'getUsers' })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      sheetUsers = data.users;
+      callback(null, data.users);
+    } else {
+      callback('Erreur serveur', []);
+    }
+  })
+  .catch(function() {
+    callback('Problème de connexion. Réessayez dans un instant.', []);
+  });
+}
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
