@@ -554,15 +554,11 @@ tr:hover td{background:#fafaf8}
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxwny_gfCW348MoSMeCvwSjMJhDR5a59fhlTgPuDB42maaTtSwOGFnqgHXRK8kBK9S4/exec';
-var ADM_MAIL   = 'contact.serenityci@gmail.com';
-// Colonnes: EMAIL | MOT_DE_PASSE | ROLE | EXPIRES_AT | ACTIVE | CREATED_AT | NOTE | STATUT
-var COL = { EMAIL:0, PASSWORD:1, ROLE:2, EXPIRES:3, ACTIVE:4, CREATED:5, NOTE:6, STATUT:7 };
-
-var now   = new Date();
-var MOIS  = ['janvier','f\u00e9vrier','mars','avril','mai','juin','juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre'];
-var JOURS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxwnygfCW348MoSMeCvwSjMJhDR5a59fhlTgPuDB42maaTtSwOGFnqgHXRK8kBK9S4/exec';
+var ADMMAIL    = 'contact.serenityci@gmail.com';
+var now        = new Date();
+var MOIS       = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+var JOURS      = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
 var currentUser = null;
 var isAdmin     = false;
 var sheetUsers  = [];
@@ -580,8 +576,12 @@ if (dEl) {
 // ══════════════════════════════════════════
 // SPLASH
 // ══════════════════════════════════════════
-window.addEventListener('load', function () {
-  setTimeout(function () { document.getElementById('splash').classList.add('gone'); }, 2600);
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    document.getElementById('splash').classList.add('gone');
+    // On pré-charge le sheet en arrière-plan sans bloquer l'affichage
+    fetchSheet(function() {});
+  }, 2600);
 });
 
 // ══════════════════════════════════════════
