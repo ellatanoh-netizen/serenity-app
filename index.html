@@ -613,44 +613,55 @@ function fetchSheet(callback) {
 function doClientLogin() {
   var email = document.getElementById('l-email').value.trim().toLowerCase();
   var pwd   = document.getElementById('l-pwd').value.trim();
-  var btn   = document.getElementById('l-btn');
   var err   = document.getElementById('l-err');
-  err.style.display = 'none';
+  var btn   = document.getElementById('l-btn');
 
-  if (!email || !pwd) { showErr(err, 'Remplissez tous les champs.'); return; }
+  if (!email || !pwd) {
+    err.textContent = 'Remplis tous les champs.';
+    err.style.display = 'block'; return;
+  }
 
   btn.disabled = true;
-  btn.innerHTML = '<div class="spin"></div> V\u00e9rification...';
+  btn.innerHTML = '<span class="spin"></span> Connexion…';
 
-  fetchSheet(function (error, users) {
-    btn.disabled = false;
-    btn.innerHTML = 'Se connecter';
-
-    if (error) { showErr(err, 'Probl\u00e8me de connexion. R\u00e9essayez dans un instant.'); return; }
-
-    var found = null;
-    for (var i = 0; i < users.length; i++) {
-      if (users[i].email === email) { found = users[i]; break; }
-    }
-
-    if (!found)                      { showErr(err, 'Email introuvable. V\u00e9rifiez votre adresse.'); return; }
-    if (found.password !== pwd)      { showErr(err, 'Mot de passe incorrect.'); return; }
-    if (found.active === 'false')    { showErr(err, 'Votre acc\u00e8s est d\u00e9sactiv\u00e9. Contactez Serenity.'); return; }
-    if (found.statut === 'false')    { showErr(err, 'Compte suspendu. Contactez Serenity.'); return; }
-
-    if (found.expires) {
-      var exp = new Date(found.expires);
-      if (!isNaN(exp.getTime()) && exp < now) {
-        showErr(err, 'Acc\u00e8s expir\u00e9 le ' + exp.toLocaleDateString('fr-FR') + '. Contactez Serenity.');
+  // Si le sheet n'est pas encore chargé, on recharge
+  if (!sheetUsers || sheetUsers.length === 0) {
+    fetchSheet(function(e) {
+      if (e) {
+        btn.disabled = false;
+        btn.textContent = 'Se connecter';
+        err.textContent = 'Impossible de contacter le serveur. Réessaie.';
+        err.style.display = 'block';
         return;
       }
-    }
+      _checkLogin(email, pwd, err, btn);
+    });
+  } else {
+    _checkLogin(email, pwd, err, btn);
+  }
+}
 
-    currentUser = found;
-    isAdmin     = false;
-    renderClientHome();
-    showClientApp();
+function _checkLogin(email, pwd, err, btn) {
+  btn.disabled = false;
+  btn.textContent = 'Se connecter';
+
+  var user = sheetUsers.find(function(u) {
+    return u.email === email && u.password === pwd;
   });
+
+  if (!user) {
+    err.textContent = 'Email ou mot de passe incorrect.';
+    err.style.display = 'block'; return;
+  }
+  if (!user.active) {
+    err.textContent = 'Compte inactif. Contactez l\'administratrice.';
+    err.style.display = 'block'; return;
+  }
+
+  currentUser = user;
+  isAdmin = false;
+  document.getElementById('login-page').classList.add('hidden');
+  initClientApp(user);
 }
 
 // ══════════════════════════════════════════
@@ -659,35 +670,55 @@ function doClientLogin() {
 function doAdminLogin() {
   var email = document.getElementById('a-email').value.trim().toLowerCase();
   var pwd   = document.getElementById('a-pwd').value.trim();
-  var btn   = document.getElementById('a-btn');
   var err   = document.getElementById('a-err');
-  err.style.display = 'none';
+  var btn   = document.getElementById('a-btn');
 
-  if (email !== ADM_MAIL.toLowerCase()) { showErr(err, 'Acc\u00e8s refus\u00e9 \u2014 email non autoris\u00e9.'); return; }
-  if (!pwd)                             { showErr(err, 'Entrez le mot de passe.'); return; }
+  if (!email || !pwd) {
+    err.textContent = 'Remplis tous les champs.';
+    err.style.display = 'block'; return;
+  }
 
   btn.disabled = true;
-  btn.innerHTML = '<div class="spin"></div>';
+  btn.innerHTML = '<span class="spin"></span> Vérification…';
 
-  fetchSheet(function (error, users) {
-    btn.disabled = false;
-    btn.innerHTML = 'Acc\u00e9der au tableau de bord';
-
-    var found = null;
-    for (var i = 0; i < users.length; i++) {
-      if (users[i].email === ADM_MAIL.toLowerCase() && users[i].role === 'admin') {
-        found = users[i]; break;
+  if (!sheetUsers || sheetUsers.length === 0) {
+    fetchSheet(function(e) {
+      if (e) {
+        btn.disabled = false;
+        btn.textContent = 'Accéder au tableau de bord';
+        err.textContent = 'Impossible de contacter le serveur.';
+        err.style.display = 'block';
+        return;
       }
-    }
+      _checkAdmin(email, pwd, err, btn);
+    });
+  } else {
+    _checkAdmin(email, pwd, err, btn);
+  }
+}
 
-    if (!found || found.password !== pwd) { showErr(err, 'Mot de passe incorrect.'); return; }
+function _checkAdmin(email, pwd, err, btn) {
+  btn.disabled = false;
+  btn.textContent = 'Accéder au tableau de bord';
 
-    currentUser = found;
-    isAdmin     = true;
-    closeAdminModal();
-    showAdminApp();
-    loadAdminData();
+  var user = sheetUsers.find(function(u) {
+    return u.email === email && u.password === pwd && u.role === 'admin';
   });
+
+  if (!user) {
+    err.textContent = 'Identifiants admin incorrects.';
+    err.style.display = 'block'; return;
+  }
+  if (!user.active) {
+    err.textContent = 'Compte inactif.';
+    err.style.display = 'block'; return;
+  }
+
+  currentUser = user;
+  isAdmin = true;
+  document.getElementById('mo-admin').classList.remove('open');
+  document.getElementById('login-page').classList.add('hidden');
+  initAdminApp(user);
 }
 
 function doLogout() {
