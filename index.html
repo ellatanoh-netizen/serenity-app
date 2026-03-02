@@ -554,8 +554,7 @@ tr:hover td{background:#fafaf8}
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-var SHEET_ID   = '1IVo6WtgSO97lI-oRHVb7HJm5XKd10AnVhsp7v33tN-8';
-var SHEET_NAME = 'Serenity - Acc\u00e8s clients';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxwny_gfCW348MoSMeCvwSjMJhDR5a59fhlTgPuDB42maaTtSwOGFnqgHXRK8kBK9S4/exec';
 var ADM_MAIL   = 'contact.serenityci@gmail.com';
 // Colonnes: EMAIL | MOT_DE_PASSE | ROLE | EXPIRES_AT | ACTIVE | CREATED_AT | NOTE | STATUT
 var COL = { EMAIL:0, PASSWORD:1, ROLE:2, EXPIRES:3, ACTIVE:4, CREATED:5, NOTE:6, STATUT:7 };
@@ -589,64 +588,23 @@ window.addEventListener('load', function () {
 // LIRE LE GOOGLE SHEET VIA JSONP
 // ══════════════════════════════════════════
 function fetchSheet(callback) {
-  var cbName = 'gsCB' + Date.now();
-  var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-    + '/gviz/tq?tqx=out:json'
-    + '&responseHandler=' + cbName
-    + '&sheet=' + encodeURIComponent(SHEET_NAME);
-
-  var done = false;
-
-  window[cbName] = function (data) {
-    done = true;
-    try {
-      var rows  = data.table.rows;
-      var users = [];
-      for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        if (!row || !row.c) continue;
-        function cell(r, idx) {
-          return (r.c[idx] && r.c[idx].v != null) ? String(r.c[idx].v).trim() : '';
-        }
-        var email = cell(row, COL.EMAIL).toLowerCase();
-        if (!email) continue;
-        users.push({
-          email   : email,
-          password: cell(row, COL.PASSWORD),
-          role    : cell(row, COL.ROLE).toLowerCase() || 'client',
-          expires : cell(row, COL.EXPIRES),
-          active  : cell(row, COL.ACTIVE).toLowerCase(),
-          created : cell(row, COL.CREATED),
-          note    : cell(row, COL.NOTE),
-          statut  : cell(row, COL.STATUT).toLowerCase()
-        });
-      }
-      sheetUsers = users;
-      callback(null, users);
-    } catch (e) {
-      callback('Erreur lecture Sheet : ' + e.message, []);
-    } finally {
-      delete window[cbName];
-      var s = document.getElementById(cbName);
-      if (s) s.parentNode.removeChild(s);
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'getUsers' })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      sheetUsers = data.users;
+      callback(null, data.users);
+    } else {
+      callback('Erreur serveur', []);
     }
-  };
-
-  var script = document.createElement('script');
-  script.id  = cbName;
-  script.src = url;
-  script.onerror = function () {
-    if (!done) {
-      done = true;
-      delete window[cbName];
-      callback('Sheet inaccessible \u2014 v\u00e9rifiez qu\u2019il est publi\u00e9 (Fichier \u2192 Partager \u2192 Publier sur le web)', []);
-      var s = document.getElementById(cbName);
-      if (s) s.parentNode.removeChild(s);
-    }
-  };
-  document.head.appendChild(script);
+  })
+  .catch(function() {
+    callback('Problème de connexion. Réessayez dans un instant.', []);
+  });
 }
-
 // ══════════════════════════════════════════
 // LOGIN CLIENT
 // ══════════════════════════════════════════
